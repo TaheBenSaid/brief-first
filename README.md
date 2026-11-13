@@ -33,6 +33,42 @@ It works with Claude Code or any agent that supports the Agent Skills format. Th
 
 Copy `TEMPLATE.md` into your project, fill it in yourself or paste it into any chat with "fill this in for my task, don't write code yet". Then hand the filled brief over as the instructions.
 
+## Plan with one model, build with another
+
+This is the setup I tested in Claude Code: one model writes the brief, another builds from it. The switch happens on its own.
+
+| Phase | Model | Where it's set |
+| --- | --- | --- |
+| Plan | Fable 5.2 | `model: fable` in `agents/planner.md` |
+| Build | Opus 5.5 | `"model": "claude-opus-5-5"` in `~/.claude/settings.json` |
+
+1. Copy the planner agent:
+
+   ```bash
+   cp brief-first/agents/planner.md ~/.claude/agents/planner.md
+   ```
+
+2. Set the main model, the one that builds, in `~/.claude/settings.json`:
+
+   ```json
+   { "model": "claude-opus-5-5" }
+   ```
+
+3. Add this rule to `~/.claude/CLAUDE.md` so every session hands planning to the planner first:
+
+   ```markdown
+   ## Plan first
+   For any task that edits several files or takes more than a few steps,
+   first run the `planner` subagent with the full task. It writes a brief
+   to `.claude/plans/` and returns the path. Read that file, raise any open
+   question that blocks the work, then build it step by step and run every
+   check under Verify. Skip the planner for questions and one-line fixes.
+   ```
+
+Swap the model names for whatever you trust most for thinking and for coding. The brief format stays the same.
+
+Honest numbers from my one test (a small Flutter feature): the two-model run took about 2 minutes 20 seconds against 33 seconds for one model doing it all, and used more tokens. The plan is what made the result better, so I only use the split on bigger or riskier tasks.
+
 ## When not to
 
 One-line fixes, renames, or anything you already know exactly how to change. Just ask for those directly.
